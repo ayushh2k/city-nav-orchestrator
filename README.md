@@ -15,8 +15,8 @@ Its sole responsibility is to:
 
 1. **Clone the repo:**
    ```bash
-   git clone ...
-   cd orchestrator
+   git clone https://github.com/ayushh2k/city-nav-orchestrator
+   cd city-nav-orchestrator
    ```
 
 2. **Install dependencies:**
