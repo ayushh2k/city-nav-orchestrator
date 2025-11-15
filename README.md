@@ -40,3 +40,18 @@ Its sole responsibility is to:
    make dev
    ```
    The server will run on `http://localhost:8080`.
+
+---
+
+## 🐳 Running with Docker
+
+
+### Prerequisites
+
+* Docker & Docker Compose installed.
+* Ensure your `.env` files are created in both the `mcp-server` and `orchestrator` directories with all the required API keys.
+
+Run:
+
+```bash
+docker-compose up --build
