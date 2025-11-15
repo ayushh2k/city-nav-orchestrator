@@ -42,3 +42,28 @@ type McpEtaResponse struct {
 	DurationMin float64 `json:"duration_min"`
 	Polyline    string  `json:"polyline"`
 }
+
+// McpHolidayResponse is the response from /mcp/calendar/holidays
+type McpHolidayResponse []struct {
+	Date      string `json:"date"`
+	LocalName string `json:"localName"`
+}
+
+type DraftItinerary struct {
+	Stops []struct {
+		Name      string  `json:"name"`
+		Lat       float64 `json:"lat"`
+		Lon       float64 `json:"lon"`
+		StartTime string  `json:"start_time"`
+	} `json:"stops"`
+}
+
+type Point struct {
+	Lat float64 `json:"lat" binding:"required"`
+	Lon float64 `json:"lon" binding:"required"`
+}
+
+type EtaRequest struct {
+	Profile string  `json:"profile" binding:"required,oneof=foot bike car"`
+	Points  []Point `json:"points" binding:"required,min=2"`
+}

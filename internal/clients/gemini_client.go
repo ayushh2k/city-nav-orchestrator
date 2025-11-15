@@ -2,7 +2,9 @@ package clients
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"strings"
 
@@ -67,4 +69,87 @@ func (gc *GeminiClient) ClassifyIntent(userInput string) (string, error) {
 	}
 
 	return strings.TrimSpace(intent), nil
+}
+
+func (gc *GeminiClient) StreamPlan(prompt string) (<-chan string, error) {
+	ctx := context.Background()
+
+	stream := make(chan string)
+
+	go func() {
+		defer close(stream)
+
+		for resp, err := range gc.Client.Models.GenerateContentStream(ctx,
+			gc.Model,
+			genai.Text(prompt),
+			nil,
+		) {
+			if err != nil {
+				log.Printf("Gemini Stream Error: %v", err)
+				return
+			}
+
+			text := resp.Text()
+			if err != nil {
+				log.Printf("Warning: Could not extract text from stream part: %v", err)
+				continue
+			}
+
+			if text != "" {
+				stream <- text
+			}
+		}
+	}()
+
+	return stream, nil
+}
+
+func (gc *GeminiClient) GenerateStructuredItinerary(prompt string) (*DraftItinerary, error) {
+	ctx := context.Background()
+
+	responseSchema := &genai.Schema{
+		Type: genai.TypeObject,
+		Properties: map[string]*genai.Schema{
+			"stops": {
+				Type: genai.TypeArray,
+				Items: &genai.Schema{
+					Type: genai.TypeObject,
+					Properties: map[string]*genai.Schema{
+						"name":       {Type: genai.TypeString, Description: "The name of the venue."},
+						"lat":        {Type: genai.TypeNumber, Description: "Latitude of the venue."},
+						"lon":        {Type: genai.TypeNumber, Description: "Longitude of the venue."},
+						"start_time": {Type: genai.TypeString, Description: "The suggested start time for the visit (HH:MM)."},
+					},
+					Required: []string{"name", "lat", "lon", "start_time"},
+				},
+			},
+		},
+	}
+
+	config := &genai.GenerateContentConfig{
+		ResponseMIMEType: "application/json",
+		ResponseSchema:   responseSchema,
+	}
+
+	resp, err := gc.Client.Models.GenerateContent(ctx,
+		gc.Model,
+		genai.Text(prompt),
+		config,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	rawJSON := resp.Text()
+	if err != nil {
+		return nil, err
+	}
+
+	var draft DraftItinerary
+	if err := json.Unmarshal([]byte(rawJSON), &draft); err != nil {
+		log.Printf("Failed to unmarshal draft itinerary: %s", rawJSON)
+		return nil, fmt.Errorf("gemini returned unparsable JSON: %v", err)
+	}
+
+	return &draft, nil
 }
