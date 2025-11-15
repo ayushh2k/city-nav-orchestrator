@@ -1,0 +1,15 @@
+# Binaries
+/bin
+
+# Environment files
+.env
+
+# OS-specific
+.DS_Store
+
+# Logs
+*.log
+
+# IDE files
+.idea/
+.vscode/

@@ -1,0 +1,11 @@
+root = "."
+tmp_dir = "bin"
+
+[build]
+cmd = "go build -o ./bin/orchestrator-dev ./cmd/orchestrator/main.go"
+bin = "bin/orchestrator-dev"
+watch_ext = ["go", "toml"]
+include_dir = ["cmd", "internal"]
+
+[log]
+time = true
