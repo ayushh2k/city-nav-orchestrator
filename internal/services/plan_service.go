@@ -144,20 +144,34 @@ func getAirData(mcp *clients.McpClient, lat, lon float64, date string) string {
 }
 
 func getNearbyData(mcp *clients.McpClient, lat, lon float64, preferences []string) string {
-	venueQuery := strings.Join(preferences, ", ")
-	nearby, err := mcp.GetNearby(lat, lon, venueQuery)
-	if err != nil {
-		log.Printf("Warning: Failed to get nearby venues: %v", err)
+	var allVenues []string
+
+	venueMap := make(map[string]bool)
+
+	for _, pref := range preferences {
+		query := strings.TrimSpace(pref)
+		if query == "walkable" {
+			continue
+		}
+
+		log.Printf("MCP Client: Getting nearby venues for preference: %s", query)
+		nearby, err := mcp.GetNearby(lat, lon, query)
+		if err != nil {
+			log.Printf("Warning: Failed to get nearby venues for %s: %v", query, err)
+			continue
+		}
+
+		for _, place := range nearby.Places {
+			if !venueMap[place.Name] {
+				venueMap[place.Name] = true
+				allVenues = append(allVenues, fmt.Sprintf("- %s (%.6f, %.6f)", place.Name, place.Lat, place.Lon))
+			}
+		}
+	}
+
+	if len(allVenues) == 0 {
 		return "No nearby venues found based on preferences."
 	}
 
-	if len(nearby.Places) == 0 {
-		return "No nearby venues found based on preferences."
-	}
-
-	var venueList []string
-	for _, place := range nearby.Places {
-		venueList = append(venueList, fmt.Sprintf("- %s (%.6f, %.6f)", place.Name, place.Lat, place.Lon))
-	}
-	return strings.Join(venueList, "\n")
+	return strings.Join(allVenues, "\n")
 }
